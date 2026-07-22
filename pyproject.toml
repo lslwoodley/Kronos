@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kronosbot"
+version = "0.1.0"
+description = "Kronos Bot: Forex paper trading and backtesting system using Kronos foundation models."
+readme = "README.md"
+requires-python = ">=3.10"
+dynamic = ["dependencies"]
+
+[project.scripts]
+kronosbot = "kronosbot.cli:cli"
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.setuptools]
+packages = ["kronosbot", "kronosbot.data", "kronosbot.features", "kronosbot.strategy", "kronosbot.broker", "kronosbot.journal", "kronosbot.webui"]

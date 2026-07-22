@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Paper Trading — Kronos Bot{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6">
+    <div class="text-center">
+        <h1 class="text-2xl font-bold text-white">Paper Trading</h1>
+        <p class="text-sm text-gray-400">Run the strategy against live market data without risking real money.</p>
+    </div>
+
+    <div class="glass-panel rounded-xl p-6">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h2 class="text-lg font-semibold text-white">Status: Simulated</h2>
+                <p class="text-sm text-gray-400">Currently using the internal PaperBroker. IBKR integration is coming.</p>
+            </div>
+            <span class="rounded-full bg-yellow-900/50 text-yellow-300 text-xs px-3 py-1">Paused</span>
+        </div>
+
+        <form class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Symbol</label>
+                    <select class="w-full rounded-md bg-gray-900 border border-gray-700 text-white px-3 py-2">
+                        {% for symbol in supported_symbols %}
+                        <option value="{{ symbol }}">{{ symbol }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Cash ($)</label>
+                    <input type="number" value="10000" class="w-full rounded-md bg-gray-900 border border-gray-700 text-white px-3 py-2">
+                </div>
+            </div>
+
+            <button type="button" disabled class="w-full rounded-md bg-gray-700 px-4 py-2 text-sm font-medium text-gray-300 cursor-not-allowed">
+                Start Paper Trading (CLI only for now)
+            </button>
+        </form>
+    </div>
+
+    <div class="glass-panel rounded-xl p-6">
+        <h2 class="text-lg font-semibold text-white mb-3">How to run paper trading</h2>
+        <pre class="bg-gray-900 rounded-md p-4 text-xs text-brand-400 overflow-x-auto">
+python -m kronosbot.cli paper EURUSD --start 2025-01-01
+        </pre>
+        <p class="text-sm text-gray-400 mt-3">Paper mode evaluates the latest bar daily, logs signals, and simulates fills. The journal stores everything.</p>
+    </div>
+</div>
+{% endblock %}

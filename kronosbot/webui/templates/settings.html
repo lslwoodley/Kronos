@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Settings — Kronos Bot{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6">
+    <div class="text-center">
+        <h1 class="text-2xl font-bold text-white">Settings</h1>
+        <p class="text-sm text-gray-400">Paths, storage, and integration placeholders.</p>
+    </div>
+
+    <div class="glass-panel rounded-xl p-6 space-y-4">
+        <div class="grid grid-cols-3 gap-4 text-sm">
+            <div class="text-gray-500">Database</div>
+            <div class="col-span-2 text-white font-mono">{{ db_path }}</div>
+        </div>
+        <div class="grid grid-cols-3 gap-4 text-sm">
+            <div class="text-gray-500">Cache Directory</div>
+            <div class="col-span-2 text-white font-mono">{{ cache_dir }}</div>
+        </div>
+        <div class="grid grid-cols-3 gap-4 text-sm">
+            <div class="text-gray-500">Results Directory</div>
+            <div class="col-span-2 text-white font-mono">{{ results_dir }}</div>
+        </div>
+    </div>
+
+    <div class="glass-panel rounded-xl p-6">
+        <h2 class="text-lg font-semibold text-white mb-3">Interactive Brokers (IBKR) Integration</h2>
+        <p class="text-sm text-gray-300">
+            To trade with real market data, run the <strong>IBKR Client Portal Gateway</strong> locally and configure credentials
+            via environment variables. The adapter is not yet active.
+        </p>
+        <pre class="bg-gray-900 rounded-md p-4 text-xs text-brand-400 overflow-x-auto mt-3">
+export IBKR_HOST=http://localhost:5000
+export IBKR_ACCOUNT_ID=your_account_id
+        </pre>
+    </div>
+
+    <div class="glass-panel rounded-xl p-6">
+        <h2 class="text-lg font-semibold text-white mb-3">Data Providers</h2>
+        <p class="text-sm text-gray-300">
+            Current feed: <strong>yfinance</strong> (free, daily). Add an Alpha Vantage API key later for higher-quality data.
+        </p>
+    </div>
+</div>
+{% endblock %}

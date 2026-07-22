@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Strategies — Kronos Bot{% endblock %}
+{% block content %}
+<div class="space-y-6">
+    <div>
+        <h1 class="text-2xl font-bold text-white">Kronos Strategy</h1>
+        <p class="text-sm text-gray-400">How entries, exits, and sizing are decided.</p>
+    </div>
+
+    <div class="glass-panel rounded-xl p-6">
+        <h2 class="text-lg font-semibold text-white mb-4">Strategy Logic</h2>
+        <div class="space-y-4 text-sm text-gray-300">
+            <div class="flex items-start gap-3">
+                <span class="rounded-full bg-brand-900/50 text-brand-400 font-bold w-6 h-6 flex items-center justify-center text-xs">1</span>
+                <div>
+                    <p class="font-medium text-white">Trend Filter</p>
+                    <p>Only trade when the closing price is above the 200-period SMA. This keeps the bot aligned with the long-term trend.</p>
+                </div>
+            </div>
+            <div class="flex items-start gap-3">
+                <span class="rounded-full bg-brand-900/50 text-brand-400 font-bold w-6 h-6 flex items-center justify-center text-xs">2</span>
+                <div>
+                    <p class="font-medium text-white">Breakout Confirmation</p>
+                    <p>Enter only when price closes above the highest close of the previous 19 bars. This confirms momentum.</p>
+                </div>
+            </div>
+            <div class="flex items-start gap-3">
+                <span class="rounded-full bg-brand-900/50 text-brand-400 font-bold w-6 h-6 flex items-center justify-center text-xs">3</span>
+                <div>
+                    <p class="font-medium text-white">Volume / Volatility Spike</p>
+                    <p>Require volume > 150% of the 20-day average, or an ATR spike when volume is unavailable. This filters low-conviction moves.</p>
+                </div>
+            </div>
+            <div class="flex items-start gap-3">
+                <span class="rounded-full bg-brand-900/50 text-brand-400 font-bold w-6 h-6 flex items-center justify-center text-xs">4</span>
+                <div>
+                    <p class="font-medium text-white">Kronos Forecast Bias</p>
+                    <p>When a Kronos model is loaded, the next-day close forecast must be bullish. Without a model, this component is neutral.</p>
+                </div>
+            </div>
+            <div class="flex items-start gap-3">
+                <span class="rounded-full bg-brand-900/50 text-brand-400 font-bold w-6 h-6 flex items-center justify-center text-xs">5</span>
+                <div>
+                    <p class="font-medium text-white">Risk Management</p>
+                    <p>Stop-loss is set at 2 × ATR(14) below the entry price. Position size is fixed at 1 mini lot (10,000 units) for v0.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-panel rounded-xl p-6">
+        <h2 class="text-lg font-semibold text-white mb-3">Default Parameters</h2>
+        <dl class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+                <dt class="text-gray-500">Starting Cash</dt>
+                <dd class="font-medium text-white">$10,000</dd>
+            </div>
+            <div>
+                <dt class="text-gray-500">Trade Size</dt>
+                <dd class="font-medium text-white">10,000 units</dd>
+            </div>
+            <div>
+                <dt class="text-gray-500">Spread (EURUSD)</dt>
+                <dd class="font-medium text-white">0.6 pips</dd>
+            </div>
+            <div>
+                <dt class="text-gray-500">Commission</dt>
+                <dd class="font-medium text-white">$5 round-trip per mini lot</dd>
+            </div>
+            <div>
+                <dt class="text-gray-500">Stop Loss</dt>
+                <dd class="font-medium text-white">2 × ATR(14)</dd>
+            </div>
+        </dl>
+    </div>
+</div>
+{% endblock %}

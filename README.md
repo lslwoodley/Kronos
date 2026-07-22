@@ -84,6 +84,32 @@ We release a family of pre-trained models with varying capacities to suit differ
 
 ## 🚀 Getting Started
 
+### 🏦 Kronos Bot: Paper Trading & Backtesting (New)
+
+Kronos Bot turns Kronos forecasts into a live-quality forex trading system with event-driven backtesting and a polished management web UI.
+
+**Features:**
+- **Forex-first:** EURUSD, GBPUSD, USDJPY daily bars via yfinance.
+- **Backtesting.py engine:** realistic fills, spread, and commission modeling.
+- **Kronos + Quant Science signals:** 200 SMA trend, 20-day breakout, volume/volatility spike, ATR stop, and Kronos forecast bias.
+- **Paper broker:** simulate market orders, PnL, and equity before going live.
+- **SQLite journal:** every bar, signal, order, fill, and backtest is logged.
+- **Management web UI:** dark, mobile-responsive dashboard at `http://localhost:8051`.
+
+**Quick start:**
+
+```shell
+pip install -r requirements.txt
+
+# Run a backtest from the CLI
+python -m kronosbot.cli backtest EURUSD --start 2024-01-01 --end 2025-01-01
+
+# Or start the web UI
+python -m kronosbot.webui.app
+```
+
+See [`docs/kronosbot.md`](docs/kronosbot.md) for architecture and IBKR integration notes.
+
 ### Installation
 
 1. Install Python 3.10+, and then install the dependencies:

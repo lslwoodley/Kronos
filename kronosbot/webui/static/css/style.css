@@ -1,0 +1,27 @@
+/* Kronos Bot Web UI custom styles */
+
+html {
+    scroll-behavior: smooth;
+}
+
+.glass-panel {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Table zebra striping for readability */
+table tbody tr:nth-child(even) {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* HTMX loading indicator */
+.htmx-request {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+/* Mobile tweaks */
+@media (max-width: 640px) {
+    .glass-panel {
+        padding: 1rem;
+    }
+}

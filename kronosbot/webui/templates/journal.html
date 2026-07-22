@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Journal — Kronos Bot{% endblock %}
+{% block content %}
+<div class="space-y-6">
+    <div>
+        <h1 class="text-2xl font-bold text-white">Journal</h1>
+        <p class="text-sm text-gray-400">Stored signals, trades, and equity snapshots from backtests and paper runs.</p>
+    </div>
+
+    <div class="glass-panel rounded-xl p-6">
+        <h2 class="text-lg font-semibold text-white mb-4">Recent Trades</h2>
+        {% if trades %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left text-gray-300">
+                <thead class="text-xs uppercase text-gray-500 border-b border-gray-700">
+                    <tr>
+                        <th class="py-2">Symbol</th>
+                        <th class="py-2">Entry</th>
+                        <th class="py-2">Exit</th>
+                        <th class="py-2">PnL ($)</th>
+                        <th class="py-2">Return %</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in trades %}
+                    <tr class="border-b border-gray-800">
+                        <td class="py-2">{{ t.symbol }}</td>
+                        <td class="py-2">{{ t.entry_time }} @ {{ "%.5f"|format(t.entry_price) }}</td>
+                        <td class="py-2">{{ t.exit_time or '—' }} @ {{ "%.5f"|format(t.exit_price) if t.exit_price else '—' }}</td>
+                        <td class="py-2">{{ "%.2f"|format(t.pnl) }}</td>
+                        <td class="py-2">{{ "%.2f"|format(t.return_pct) }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-sm text-gray-500">No trades logged yet. Run a backtest to populate the journal.</p>
+        {% endif %}
+    </div>
+
+    <div class="glass-panel rounded-xl p-6">
+        <h2 class="text-lg font-semibold text-white mb-4">Recent Equity Snapshots</h2>
+        {% if equity %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left text-gray-300">
+                <thead class="text-xs uppercase text-gray-500 border-b border-gray-700">
+                    <tr>
+                        <th class="py-2">Time</th>
+                        <th class="py-2">Cash</th>
+                        <th class="py-2">Unrealized</th>
+                        <th class="py-2">Realized</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for e in equity %}
+                    <tr class="border-b border-gray-800">
+                        <td class="py-2">{{ e.timestamp }}</td>
+                        <td class="py-2">${{ "%.2f"|format(e.cash) }}</td>
+                        <td class="py-2">${{ "%.2f"|format(e.unrealized) }}</td>
+                        <td class="py-2">${{ "%.2f"|format(e.realized) }}</td>
+                    </tr>
+                    {% endfor %}</tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-sm text-gray-500">No equity snapshots logged yet.</p>
+        {% endif %}
+    </div>
+
+    <div class="glass-panel rounded-xl p-6">
+        <h2 class="text-lg font-semibold text-white mb-4">Recent Signals</h2>
+        {% if signals %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left text-gray-300">
+                <thead class="text-xs uppercase text-gray-500 border-b border-gray-700">
+                    <tr>
+                        <th class="py-2">Time</th>
+                        <th class="py-2">Symbol</th>
+                        <th class="py-2">Trend</th>
+                        <th class="py-2">Breakout</th>
+                        <th class="py-2">Volume Spike</th>
+                        <th class="py-2">Entry Signal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in signals %}
+                    <tr class="border-b border-gray-800">
+                        <td class="py-2">{{ s.timestamp }}</td>
+                        <td class="py-2">{{ s.symbol }}</td>
+                        <td class="py-2">{{ s.trend }}</td>
+                        <td class="py-2">{{ s.breakout }}</td>
+                        <td class="py-2">{{ s.volume_spike }}</td>
+                        <td class="py-2">{{ s.entry_signal }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-sm text-gray-500">No signals logged yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

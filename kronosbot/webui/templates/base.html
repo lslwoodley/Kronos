@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Kronos Bot{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            900: '#0c4a6e',
+                            950: '#082f49',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif; }
+        .glass-panel { background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.08); }
+    </style>
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col">
+    <nav class="border-b border-gray-800 bg-gray-900/80 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-14">
+                <a href="/" class="flex items-center gap-2 text-brand-400 font-bold text-lg">
+                    <span class="text-2xl">⏳</span>
+                    <span>Kronos Bot</span>
+                </a>
+                <div class="hidden md:flex items-center gap-1 text-sm">
+                    <a href="/" class="px-3 py-2 rounded-md hover:bg-gray-800 {% if request.path == '/' %}bg-gray-800 text-brand-400{% endif %}">Dashboard</a>
+                    <a href="/symbols" class="px-3 py-2 rounded-md hover:bg-gray-800 {% if request.path == '/symbols' %}bg-gray-800 text-brand-400{% endif %}">Symbols</a>
+                    <a href="/strategies" class="px-3 py-2 rounded-md hover:bg-gray-800 {% if request.path == '/strategies' %}bg-gray-800 text-brand-400{% endif %}">Strategies</a>
+                    <a href="/backtest" class="px-3 py-2 rounded-md hover:bg-gray-800 {% if request.path == '/backtest' %}bg-gray-800 text-brand-400{% endif %}">Backtest</a>
+                    <a href="/paper" class="px-3 py-2 rounded-md hover:bg-gray-800 {% if request.path == '/paper' %}bg-gray-800 text-brand-400{% endif %}">Paper</a>
+                    <a href="/journal" class="px-3 py-2 rounded-md hover:bg-gray-800 {% if request.path == '/journal' %}bg-gray-800 text-brand-400{% endif %}">Journal</a>
+                    <a href="/settings" class="px-3 py-2 rounded-md hover:bg-gray-800 {% if request.path == '/settings' %}bg-gray-800 text-brand-400{% endif %}">Settings</a>
+                </div>
+                <button class="md:hidden text-gray-300" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">☰</button>
+            </div>
+        </div>
+        <div id="mobile-menu" class="hidden md:hidden border-t border-gray-800 px-4 pb-3 space-y-1">
+            <a href="/" class="block px-3 py-2 rounded-md hover:bg-gray-800">Dashboard</a>
+            <a href="/symbols" class="block px-3 py-2 rounded-md hover:bg-gray-800">Symbols</a>
+            <a href="/strategies" class="block px-3 py-2 rounded-md hover:bg-gray-800">Strategies</a>
+            <a href="/backtest" class="block px-3 py-2 rounded-md hover:bg-gray-800">Backtest</a>
+            <a href="/paper" class="block px-3 py-2 rounded-md hover:bg-gray-800">Paper</a>
+            <a href="/journal" class="block px-3 py-2 rounded-md hover:bg-gray-800">Journal</a>
+            <a href="/settings" class="block px-3 py-2 rounded-md hover:bg-gray-800">Settings</a>
+        </div>
+    </nav>
+
+    <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="mb-4 rounded-md px-4 py-3 {% if category == 'error' %}bg-red-900/50 text-red-100 border border-red-700{% else %}bg-brand-900/50 text-brand-100 border border-brand-700{% endif %}">
+                {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="border-t border-gray-800 py-4 text-center text-xs text-gray-500">
+        Kronos Bot — Forex paper trading system. Not financial advice.
+    </footer>
+</body>
+</html>

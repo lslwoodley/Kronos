@@ -135,12 +135,12 @@ class Journal:
             )
             conn.commit()
 
-    def read_bars(self, symbol: str) -> List[Dict[str, Any]]:
+    def read_bars(self, symbol: str, limit: int = 10_000) -> List[Dict[str, Any]]:
         with self._conn() as conn:
             conn.row_factory = sqlite3.Row
             cursor = conn.execute(
-                "SELECT * FROM bars WHERE symbol = ? ORDER BY timestamp",
-                (symbol,),
+                "SELECT * FROM bars WHERE symbol = ? ORDER BY timestamp LIMIT ?",
+                (symbol, limit),
             )
             return [dict(row) for row in cursor.fetchall()]
 
@@ -169,12 +169,12 @@ class Journal:
             )
             conn.commit()
 
-    def read_signals(self, symbol: str) -> List[Dict[str, Any]]:
+    def read_signals(self, symbol: str, limit: int = 100) -> List[Dict[str, Any]]:
         with self._conn() as conn:
             conn.row_factory = sqlite3.Row
             cursor = conn.execute(
-                "SELECT * FROM signals WHERE symbol = ? ORDER BY timestamp",
-                (symbol,),
+                "SELECT * FROM signals WHERE symbol = ? ORDER BY timestamp DESC LIMIT ?",
+                (symbol, limit),
             )
             return [dict(row) for row in cursor.fetchall()]
 
@@ -210,6 +210,18 @@ class Journal:
             conn.commit()
             return cursor.lastrowid
 
+    def read_backtest_runs(self, limit: int = 100) -> List[Dict[str, Any]]:
+        with self._conn() as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.execute(
+                "SELECT * FROM backtest_runs ORDER BY created_at DESC LIMIT ?",
+                (limit,),
+            )
+            rows = [dict(row) for row in cursor.fetchall()]
+            for row in rows:
+                row["params"] = json.loads(row.get("params") or "{}")
+            return rows
+
     def read_backtest_run(self, run_id: int) -> Optional[Dict[str, Any]]:
         with self._conn() as conn:
             conn.row_factory = sqlite3.Row
@@ -242,12 +254,12 @@ class Journal:
             )
             conn.commit()
 
-    def read_backtest_trades(self, run_id: int) -> List[Dict[str, Any]]:
+    def read_backtest_trades(self, run_id: int, limit: int = 100) -> List[Dict[str, Any]]:
         with self._conn() as conn:
             conn.row_factory = sqlite3.Row
             cursor = conn.execute(
-                "SELECT * FROM backtest_trades WHERE run_id = ? ORDER BY entry_time",
-                (run_id,),
+                "SELECT * FROM backtest_trades WHERE run_id = ? ORDER BY entry_time DESC LIMIT ?",
+                (run_id, limit),
             )
             return [dict(row) for row in cursor.fetchall()]
 
@@ -312,8 +324,11 @@ class Journal:
             conn.commit()
             return cursor.lastrowid
 
-    def read_equity(self) -> List[Dict[str, Any]]:
+    def read_equity(self, n: int = 100) -> List[Dict[str, Any]]:
         with self._conn() as conn:
             conn.row_factory = sqlite3.Row
-            cursor = conn.execute("SELECT * FROM equity ORDER BY timestamp")
+            cursor = conn.execute(
+                "SELECT * FROM equity ORDER BY timestamp DESC LIMIT ?",
+                (n,),
+            )
             return [dict(row) for row in cursor.fetchall()]

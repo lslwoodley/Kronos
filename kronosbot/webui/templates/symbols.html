@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Symbols — Kronos Bot{% endblock %}
+{% block content %}
+<div class="space-y-6">
+    <div>
+        <h1 class="text-2xl font-bold text-white">Symbols</h1>
+        <p class="text-sm text-gray-400">Fetch and cache historical daily forex data.</p>
+    </div>
+
+    <div class="grid gap-4 md:grid-cols-3">
+        {% for symbol in supported_symbols %}
+        <div class="glass-panel rounded-xl p-5 flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between">
+                    <span class="text-xl font-bold text-white">{{ symbol }}</span>
+                    {% if cached[symbol] %}
+                        <span class="rounded-full bg-green-900/50 text-green-300 text-xs px-2 py-1">Cached</span>
+                    {% else %}
+                        <span class="rounded-full bg-gray-800 text-gray-400 text-xs px-2 py-1">Not fetched</span>
+                    {% endif %}
+                </div>
+                <p class="text-sm text-gray-400 mt-2">Daily bars from Yahoo Finance (yfinance).</p>
+            </div>
+            <button
+                hx-post="/api/symbols/fetch"
+                hx-vals='{"symbol": "{{ symbol }}", "start": "2024-01-01", "end": "2026-01-01"}'
+                hx-swap="outerHTML"
+                class="mt-4 w-full rounded-md bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50"
+            >
+                Fetch / Refresh
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="glass-panel rounded-xl p-6">
+        <h2 class="text-lg font-semibold text-white mb-3">Why these symbols?</h2>
+        <p class="text-sm text-gray-300">
+            EURUSD, GBPUSD, and USDJPY are the most liquid forex majors. Daily bars provide enough data
+            for the 200-period trend filter and avoid noise from intraday spikes while we validate the strategy.
+        </p>
+    </div>
+</div>
+{% endblock %}
