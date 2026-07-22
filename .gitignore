@@ -49,6 +49,17 @@ Desktop.ini
 *.h5
 *.hdf5
 
+# Generated outputs
+webui/prediction_results/
+examples/yuce/*.json
+examples/yuce/*.png
+finetune_csv/examples/*.png
+finetune_csv/data/*.csv
+figures/*.png
+
+# Test data outputs (keep small fixtures if needed, exclude generated outputs)
+tests/data/regression_output_*.csv
+
 # Model files (large files)
 *.pth
 *.pt
