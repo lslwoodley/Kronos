@@ -30,11 +30,12 @@ class Journal:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 symbol TEXT NOT NULL,
                 timestamp TEXT NOT NULL,
-                trend INTEGER,
-                breakout INTEGER,
-                volume_spike INTEGER,
+                baseline INTEGER,
+                primary_confirmation INTEGER,
+                secondary_confirmation INTEGER,
                 atr REAL,
                 forecast_return REAL,
+                signal INTEGER,
                 entry_signal INTEGER,
                 UNIQUE(symbol, timestamp)
             )
@@ -149,14 +150,18 @@ class Journal:
             return
         cols = [
             "timestamp",
-            "trend",
-            "breakout",
-            "volume_spike",
+            "baseline",
+            "primary_confirmation",
+            "secondary_confirmation",
             "atr",
             "forecast_return",
+            "signal",
             "entry_signal",
         ]
+        # Keep legacy columns too if they exist for backward-compatible ingestion.
+        legacy = ["trend", "breakout", "volume_spike"]
         present = [c for c in cols if c in df.columns]
+        present += [c for c in legacy if c in df.columns and c not in present]
         data = df[present].copy()
         data["timestamp"] = pd.to_datetime(data["timestamp"]).dt.strftime("%Y-%m-%d %H:%M:%S")
         rows = [(symbol, *row) for row in data.itertuples(index=False, name=None)]

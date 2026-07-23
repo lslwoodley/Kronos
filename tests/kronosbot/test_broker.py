@@ -75,11 +75,39 @@ class TestPaperBroker:
         assert broker.position()["side"] == "FLAT"
         assert broker.realized_pnl == pytest.approx(99.4 - 10.0, rel=1e-3)
 
-    def test_sell_without_position_raises(self):
+    def test_sell_without_position_opens_short(self):
         broker = self._broker()
         ts = datetime(2024, 1, 1)
-        with pytest.raises(ValueError, match="No open position to close"):
+        fill = broker.market_order("SELL", price=1.0900, timestamp=ts)
+
+        assert fill["side"] == "SELL"
+        assert fill["fill_price"] == pytest.approx(1.08997)
+        assert broker.position()["side"] == "SHORT"
+        assert broker.position()["units"] == 10_000
+
+    def test_sell_when_short_raises(self):
+        broker = self._broker()
+        ts = datetime(2024, 1, 1)
+        broker.market_order("SELL", price=1.0900, timestamp=ts)
+        with pytest.raises(ValueError, match="Already short"):
             broker.market_order("SELL", price=1.0900, timestamp=ts)
+
+    def test_buy_when_long_raises(self):
+        broker = self._broker()
+        ts = datetime(2024, 1, 1)
+        broker.market_order("BUY", price=1.0800, timestamp=ts)
+        with pytest.raises(ValueError, match="Already long"):
+            broker.market_order("BUY", price=1.0800, timestamp=ts)
+
+    def test_buy_when_short_closes_short(self):
+        broker = self._broker()
+        ts = datetime(2024, 1, 1)
+        broker.market_order("SELL", price=1.0900, timestamp=ts)
+        close_fill = broker.market_order("BUY", price=1.0800, timestamp=ts)
+
+        assert close_fill["side"] == "BUY"
+        assert broker.position()["side"] == "FLAT"
+        assert broker.realized_pnl > 0  # sold high, bought low
 
     def test_unknown_side_raises(self):
         broker = self._broker()
@@ -95,6 +123,14 @@ class TestPaperBroker:
         pnl = broker.unrealized_pnl(1.0900)
         # Mark at 1.0900, sell fill = 1.08997. PnL = (1.08997 - 1.08003) * 10_000 = 99.4
         assert pnl == pytest.approx(99.4, rel=1e-3)
+
+    def test_short_unrealized_pnl(self):
+        broker = self._broker()
+        ts = datetime(2024, 1, 1)
+        broker.market_order("SELL", price=1.0900, timestamp=ts)
+        # Price drops, short is profitable
+        pnl = broker.unrealized_pnl(1.0800)
+        assert pnl > 0
 
     def test_reset_clears_position_and_pnl(self):
         broker = self._broker()

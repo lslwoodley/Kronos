@@ -58,7 +58,7 @@ class TestKronosStrategy:
 
         from backtesting import Backtest
 
-        bt = Backtest(df, strategy_class, cash=10_000, commission=0.0001, margin=1/50)
+        bt = Backtest(df, strategy_class, cash=10_000, commission=0.0001, margin=1 / 50)
         stats = bt.run()
         assert "Return [%]" in stats
 
@@ -72,12 +72,11 @@ class TestKronosStrategy:
 
         from backtesting import Backtest
 
-        bt = Backtest(df, strategy_class, cash=10_000, commission=0.0001, margin=1/50)
+        bt = Backtest(df, strategy_class, cash=10_000, commission=0.0001, margin=1 / 50)
         stats = bt.run()
-        # Trades may be empty because forecast_return is 0 by default; that's fine.
         assert "# Trades" in stats
 
-    def test_strategy_entry_signal_produces_trade(self):
+    def test_strategy_long_signal_produces_trade(self):
         from kronosbot.features.signals import SignalEngine
         from kronosbot.strategy.kronos_strategy import KronosStrategy
 
@@ -86,13 +85,38 @@ class TestKronosStrategy:
         df_signals = engine.generate(self._to_internal(df))
         # Force a positive forecast so entry signals fire.
         df_signals["forecast_return"] = 0.01
+        df_signals["signal"] = engine.compute_signal(df_signals)
         df_signals["entry_signal"] = engine.compute_entry_signal(df_signals)
 
         strategy_class = KronosStrategy.with_signal_engine(engine, df_signals=df_signals)
 
         from backtesting import Backtest
 
-        bt = Backtest(df, strategy_class, cash=10_000, commission=0.0001, margin=1/50, finalize_trades=True)
+        bt = Backtest(
+            df, strategy_class, cash=10_000, commission=0.0001, margin=1 / 50, finalize_trades=True
+        )
+        stats = bt.run()
+        assert stats["# Trades"] >= 1
+
+    def test_strategy_short_signal_produces_trade(self):
+        from kronosbot.features.signals import SignalEngine
+        from kronosbot.strategy.kronos_strategy import KronosStrategy
+
+        df = self._make_data(250)
+        engine = SignalEngine(model=None, tokenizer=None)
+        df_signals = engine.generate(self._to_internal(df))
+        # Force a negative forecast so short entry signals fire.
+        df_signals["forecast_return"] = -0.01
+        df_signals["signal"] = engine.compute_signal(df_signals)
+        df_signals["entry_signal"] = engine.compute_entry_signal(df_signals)
+
+        strategy_class = KronosStrategy.with_signal_engine(engine, df_signals=df_signals)
+
+        from backtesting import Backtest
+
+        bt = Backtest(
+            df, strategy_class, cash=10_000, commission=0.0001, margin=1 / 50, finalize_trades=True
+        )
         stats = bt.run()
         assert stats["# Trades"] >= 1
 
@@ -104,15 +128,15 @@ class TestKronosStrategy:
         engine = SignalEngine(model=None, tokenizer=None)
         df_signals = engine.generate(self._to_internal(df))
         df_signals["forecast_return"] = 0.01
+        df_signals["signal"] = engine.compute_signal(df_signals)
         df_signals["entry_signal"] = engine.compute_entry_signal(df_signals)
 
         strategy_class = KronosStrategy.with_signal_engine(engine, df_signals=df_signals)
 
         from backtesting import Backtest
 
-        bt = Backtest(df, strategy_class, cash=10_000, commission=0.0001, margin=1/50)
+        bt = Backtest(df, strategy_class, cash=10_000, commission=0.0001, margin=1 / 50)
         stats = bt.run()
-        # Trades should be closed; either by stop or signal cancellation.
         assert "# Trades" in stats
 
     def test_strategy_class_attribute_signal_engine(self):
@@ -127,6 +151,6 @@ class TestKronosStrategy:
         df = self._make_data(250)
         from backtesting import Backtest
 
-        bt = Backtest(df, TestStrategy, cash=10_000, commission=0.0001, margin=1/50)
+        bt = Backtest(df, TestStrategy, cash=10_000, commission=0.0001, margin=1 / 50)
         stats = bt.run()
         assert "Return [%]" in stats

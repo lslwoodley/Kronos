@@ -35,7 +35,7 @@ class TestWebUI:
     def test_strategies_page(self, client):
         resp = client.get("/strategies")
         assert resp.status_code == 200
-        assert b"200-period SMA" in resp.data
+        assert b"200-period EMA" in resp.data or b"NNFX" in resp.data
 
     def test_backtest_page(self, client):
         resp = client.get("/backtest")

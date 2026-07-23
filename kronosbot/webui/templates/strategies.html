@@ -8,41 +8,41 @@
     </div>
 
     <div class="glass-panel rounded-xl p-6">
-        <h2 class="text-lg font-semibold text-white mb-4">Strategy Logic</h2>
+        <h2 class="text-lg font-semibold text-white mb-4">NNFX Strategy Logic</h2>
         <div class="space-y-4 text-sm text-gray-300">
             <div class="flex items-start gap-3">
                 <span class="rounded-full bg-brand-900/50 text-brand-400 font-bold w-6 h-6 flex items-center justify-center text-xs">1</span>
                 <div>
-                    <p class="font-medium text-white">Trend Filter</p>
-                    <p>Only trade when the closing price is above the 200-period SMA. This keeps the bot aligned with the long-term trend.</p>
+                    <p class="font-medium text-white">Baseline (200 EMA)</p>
+                    <p>Long when the close is above the 200-period EMA; short when below. This keeps the bot aligned with the long-term trend in both directions.</p>
                 </div>
             </div>
             <div class="flex items-start gap-3">
                 <span class="rounded-full bg-brand-900/50 text-brand-400 font-bold w-6 h-6 flex items-center justify-center text-xs">2</span>
                 <div>
-                    <p class="font-medium text-white">Breakout Confirmation</p>
-                    <p>Enter only when price closes above the highest close of the previous 19 bars. This confirms momentum.</p>
+                    <p class="font-medium text-white">Primary Confirmation (ATR)</p>
+                    <p>Require ATR(14) to be above its 20-period SMA, i.e. expanding volatility. This confirms the market is moving.</p>
                 </div>
             </div>
             <div class="flex items-start gap-3">
                 <span class="rounded-full bg-brand-900/50 text-brand-400 font-bold w-6 h-6 flex items-center justify-center text-xs">3</span>
                 <div>
-                    <p class="font-medium text-white">Volume / Volatility Spike</p>
-                    <p>Require volume > 150% of the 20-day average, or an ATR spike when volume is unavailable. This filters low-conviction moves.</p>
+                    <p class="font-medium text-white">Secondary Confirmation (RSI 14)</p>
+                    <p>Use RSI(14) in the 50-70 zone for longs and 30-50 zone for shorts. Avoid overbought (&gt;70) and oversold (&lt;30) extremes.</p>
                 </div>
             </div>
             <div class="flex items-start gap-3">
                 <span class="rounded-full bg-brand-900/50 text-brand-400 font-bold w-6 h-6 flex items-center justify-center text-xs">4</span>
                 <div>
                     <p class="font-medium text-white">Kronos Forecast Bias</p>
-                    <p>When a Kronos model is loaded, the next-day close forecast must be bullish. Without a model, this component is neutral.</p>
+                    <p>When a Kronos model is loaded, the next-day forecast return must agree with direction (bullish for long, bearish for short). Without a model this component is neutral.</p>
                 </div>
             </div>
             <div class="flex items-start gap-3">
                 <span class="rounded-full bg-brand-900/50 text-brand-400 font-bold w-6 h-6 flex items-center justify-center text-xs">5</span>
                 <div>
                     <p class="font-medium text-white">Risk Management</p>
-                    <p>Stop-loss is set at 2 × ATR(14) below the entry price. Position size is fixed at 1 mini lot (10,000 units) for v0.</p>
+                    <p>Stop-loss is placed 2 × ATR(14) away from the entry price on both sides. Position size is fixed at 1 mini lot (10,000 units) for v0.</p>
                 </div>
             </div>
         </div>

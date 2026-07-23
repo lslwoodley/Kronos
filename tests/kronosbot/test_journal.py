@@ -38,17 +38,19 @@ class TestJournalStore:
         df = pd.DataFrame(
             {
                 "timestamp": pd.to_datetime(["2024-01-01"]),
-                "trend": [1],
-                "breakout": [1],
-                "volume_spike": [1],
+                "baseline": [1],
+                "primary_confirmation": [1],
+                "secondary_confirmation": [1],
                 "atr": [0.005],
                 "forecast_return": [0.01],
+                "signal": [1],
                 "entry_signal": [1],
             }
         )
         store.log_signals("EURUSD", df)
         rows = store.read_signals("EURUSD")
         assert len(rows) == 1
+        assert rows[0]["signal"] == 1
         assert rows[0]["entry_signal"] == 1
 
     def test_log_backtest_run_and_trades(self, tmp_path):

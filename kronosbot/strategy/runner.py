@@ -31,6 +31,25 @@ class BacktestRunner:
         self.engine = engine
         self.strategy_class = strategy_class
 
+    @classmethod
+    def with_model(
+        cls,
+        feed: DataFeed,
+        model: Optional[object] = None,
+        tokenizer: Optional[object] = None,
+        strategy_class: Type[KronosStrategy] = KronosStrategy,
+        device: str = "cpu",
+        max_context: int = 512,
+    ):
+        """Convenience factory that wraps a SignalEngine with the given model/tokenizer."""
+        engine = SignalEngine(
+            model=model,
+            tokenizer=tokenizer,
+            device=device,
+            max_context=max_context,
+        )
+        return cls(feed, engine, strategy_class)
+
     def run(
         self,
         symbol: str,

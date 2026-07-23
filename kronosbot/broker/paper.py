@@ -1,4 +1,4 @@
-"""Paper broker implementation for forex market-order simulation."""
+"""Paper broker implementation for forex market-order simulation (long/short)."""
 from datetime import datetime
 from typing import Any, Dict, Optional
 
@@ -57,19 +57,25 @@ class PaperBroker(Broker):
         commission = self._commission_for_order(self.trade_units)
 
         if side == "BUY":
+            if self._position_side == "LONG":
+                raise ValueError("Already long; use close_position to exit")
+            if self._position_side == "SHORT":
+                # Closing a short
+                return self.close_position(price, timestamp)
+            # Open long
             self._position_side = "LONG"
             self._units = self.trade_units
             self._entry_price = fill_price
-        else:
-            if self._position_side != "LONG":
-                raise ValueError("No open position to close")
-            pips = (fill_price - self._entry_price) / self.pip
-            pnl = pips * self.pip * self._units
-            # Round-trip commission: both entry and exit orders.
-            self.realized_pnl += pnl - (2 * commission)
-            self._position_side = "FLAT"
-            self._units = 0
-            self._entry_price = 0.0
+        else:  # SELL
+            if self._position_side == "SHORT":
+                raise ValueError("Already short; use close_position to exit")
+            if self._position_side == "LONG":
+                # Closing a long
+                return self.close_position(price, timestamp)
+            # Open short
+            self._position_side = "SHORT"
+            self._units = self.trade_units
+            self._entry_price = fill_price
 
         self.total_commission += commission
 
@@ -84,9 +90,35 @@ class PaperBroker(Broker):
         }
 
     def close_position(self, price: float, timestamp: datetime) -> Dict[str, Any]:
-        if self._position_side != "LONG":
+        if self._position_side == "FLAT":
             raise ValueError("No open position to close")
-        return self.market_order("SELL", price, timestamp)
+        close_side = "SELL" if self._position_side == "LONG" else "BUY"
+        fill_price = self._adjust_price(price, close_side)
+        commission = self._commission_for_order(self._units)
+
+        pips = (self._entry_price - fill_price) / self.pip
+        if self._position_side == "LONG":
+            pips = (fill_price - self._entry_price) / self.pip
+        pnl = pips * self.pip * self._units - (2 * commission)
+
+        self.realized_pnl += pnl
+        self.total_commission += commission
+
+        result = {
+            "symbol": self.symbol,
+            "side": close_side,
+            "units": self._units,
+            "price": price,
+            "fill_price": fill_price,
+            "commission": commission,
+            "pnl": pnl,
+            "timestamp": timestamp,
+        }
+
+        self._position_side = "FLAT"
+        self._units = 0
+        self._entry_price = 0.0
+        return result
 
     def position(self) -> Dict[str, Any]:
         return {
@@ -97,10 +129,14 @@ class PaperBroker(Broker):
         }
 
     def unrealized_pnl(self, price: float) -> float:
-        if self._position_side != "LONG":
+        if self._position_side == "FLAT":
             return 0.0
-        mark = price - self.half_spread
-        pips = (mark - self._entry_price) / self.pip
+        if self._position_side == "LONG":
+            mark = price - self.half_spread
+            pips = (mark - self._entry_price) / self.pip
+        else:
+            mark = price + self.half_spread
+            pips = (self._entry_price - mark) / self.pip
         return pips * self.pip * self._units
 
     def equity(self) -> float:

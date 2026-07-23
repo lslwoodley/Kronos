@@ -50,12 +50,19 @@ Desktop.ini
 *.hdf5
 
 # Generated outputs
+data/cache/
+data/hf_cache/
+data/kronosbot.db
+results/
 webui/prediction_results/
 examples/yuce/*.json
 examples/yuce/*.png
 finetune_csv/examples/*.png
 finetune_csv/data/*.csv
 figures/*.png
+
+# Plans remain in repo for design review
+!.hermes/plans/*.md
 
 # Test data outputs (keep small fixtures if needed, exclude generated outputs)
 tests/data/regression_output_*.csv

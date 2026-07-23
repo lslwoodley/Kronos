@@ -3,7 +3,7 @@ import sys
 import json
 import datetime
 from pathlib import Path
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Tuple
 
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
 
@@ -31,6 +31,10 @@ DEFAULT_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 SUPPORTED_SYMBOLS = ["EURUSD", "GBPUSD", "USDJPY"]
 
 
+# Flask app-level cache for the Kronos model so it is only loaded once per process.
+_MODEL_CACHE: dict[str, Tuple[object, object]] = {}
+
+
 # Lazy imports to avoid binding failures before backend modules are ready.
 def _get_journal():
     from kronosbot.journal.store import Journal
@@ -38,12 +42,22 @@ def _get_journal():
     return Journal(str(DEFAULT_DB_PATH))
 
 
+def _get_model(device: str = "cpu") -> Tuple[object, object]:
+    """Return cached (model, tokenizer) or load and cache them."""
+    if device not in _MODEL_CACHE:
+        from kronosbot.model_loader import load_kronos_model
+
+        _MODEL_CACHE[device] = load_kronos_model(device=device, cache_dir=DEFAULT_CACHE_DIR.parent / "hf_cache")
+    return _MODEL_CACHE[device]
+
+
 def _get_runner():
     from kronosbot.strategy.runner import BacktestRunner
     from kronosbot.strategy.kronos_strategy import KronosStrategy
 
     feed = DataFeed(cache_dir=DEFAULT_CACHE_DIR)
-    engine = SignalEngine()
+    model, tokenizer = _get_model("cpu")
+    engine = SignalEngine(model=model, tokenizer=tokenizer)
     return BacktestRunner(feed, engine, KronosStrategy)
 
 
@@ -148,6 +162,18 @@ def backtest_result():
     equity_chart = _equity_chart(result.get("equity_curve"))
     trade_count = len(result.get("trades", []))
     metrics = result.get("metrics", {})
+    trades = result.get("trades", [])
+    if isinstance(trades, pd.DataFrame):
+        trades = trades.rename(
+            columns={
+                "entry_time": "EntryTime",
+                "entry_price": "EntryPrice",
+                "exit_time": "ExitTime",
+                "exit_price": "ExitPrice",
+                "pnl": "PnL",
+                "return_pct": "ReturnPct",
+            }
+        ).to_dict("records")
 
     return render_template(
         "backtest_result.html",
@@ -156,7 +182,7 @@ def backtest_result():
         end=end,
         metrics=metrics,
         trade_count=trade_count,
-        trades=result.get("trades", []),
+        trades=trades,
         equity_chart=equity_chart,
         plot_path=result.get("plot_path"),
     )

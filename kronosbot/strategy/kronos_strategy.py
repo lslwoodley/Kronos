@@ -8,7 +8,7 @@ from kronosbot.features.signals import SignalEngine
 
 
 class KronosStrategy(Strategy):
-    """Backtesting.py strategy driven by Kronos SignalEngine signals and ATR exits."""
+    """Backtesting.py strategy driven by NNFX SignalEngine signals and ATR exits."""
 
     signal_engine: ClassVar[Optional[SignalEngine]] = None
     df_signals: ClassVar[Optional[pd.DataFrame]] = None
@@ -67,20 +67,37 @@ class KronosStrategy(Strategy):
         else:
             signals = self.signal_engine.generate(data)
 
-        self._entry_signal = self.I(
-            lambda: signals["entry_signal"].fillna(0).values, name="entry_signal"
+        self._signal = self.I(
+            lambda: signals["signal"].fillna(0).values, name="signal"
         )
         self._atr = self.I(lambda: signals["atr"].fillna(0).values, name="atr")
 
     def next(self):
-        if self._entry_signal[-1] and not self.position:
-            self.buy(size=self.size)
-        elif self.position.is_long and not self._entry_signal[-1]:
-            self.position.close()
-        elif self.position.is_long:
-            stop_price = self._entry_price() - 2 * self._atr[-1]
-            if self.data.Low[-1] <= stop_price:
+        current_signal = int(self._signal[-1])
+
+        # Enter / flip position based on NNFX signal.
+        if current_signal == 1 and not self.position.is_long:
+            if self.position:
                 self.position.close()
+            self.buy(size=self.size)
+        elif current_signal == -1 and not self.position.is_short:
+            if self.position:
+                self.position.close()
+            self.sell(size=self.size)
+        elif current_signal == 0 and self.position:
+            self.position.close()
+
+        # ATR-based stop for the currently open trade.
+        if self.position:
+            entry_price = self._entry_price()
+            if self.position.is_long:
+                stop_price = entry_price - 2 * self._atr[-1]
+                if self.data.Low[-1] <= stop_price:
+                    self.position.close()
+            elif self.position.is_short:
+                stop_price = entry_price + 2 * self._atr[-1]
+                if self.data.High[-1] >= stop_price:
+                    self.position.close()
 
     def _entry_price(self) -> float:
         if self.trades:

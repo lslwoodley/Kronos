@@ -77,9 +77,10 @@
                     <tr>
                         <th class="py-2">Time</th>
                         <th class="py-2">Symbol</th>
-                        <th class="py-2">Trend</th>
-                        <th class="py-2">Breakout</th>
-                        <th class="py-2">Volume Spike</th>
+                        <th class="py-2">Baseline</th>
+                        <th class="py-2">C1</th>
+                        <th class="py-2">C2</th>
+                        <th class="py-2">Signal</th>
                         <th class="py-2">Entry Signal</th>
                     </tr>
                 </thead>
@@ -88,9 +89,10 @@
                     <tr class="border-b border-gray-800">
                         <td class="py-2">{{ s.timestamp }}</td>
                         <td class="py-2">{{ s.symbol }}</td>
-                        <td class="py-2">{{ s.trend }}</td>
-                        <td class="py-2">{{ s.breakout }}</td>
-                        <td class="py-2">{{ s.volume_spike }}</td>
+                        <td class="py-2">{{ s.baseline }}</td>
+                        <td class="py-2">{{ s.primary_confirmation }}</td>
+                        <td class="py-2">{{ s.secondary_confirmation }}</td>
+                        <td class="py-2">{{ s.signal }}</td>
                         <td class="py-2">{{ s.entry_signal }}</td>
                     </tr>
                     {% endfor %}
