@@ -1,6 +1,10 @@
-"""Simple walk-forward backtest: forecast today, trade tomorrow open, close next open."""
+"""Simple walk-forward backtest: forecast today, trade tomorrow open, close next open.
+
+Adds quant-layer hooks for custom sizing, execution cost, and signal filters while keeping
+Kronos as the forecast source.
+"""
 from dataclasses import dataclass
-from typing import Callable, Dict, List
+from typing import Callable, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -30,6 +34,9 @@ class WalkForwardBacktest:
         min_return_threshold: float = 0.001,
         risk_per_trade: float = 0.01,
         forecast_context_bars: int = 60,
+        sizing_fn: Optional[Callable[[AlphaSignal, pd.DataFrame, float], float]] = None,
+        execution_cost_fn: Optional[Callable[[pd.Series, pd.Series, int, pd.DataFrame], float]] = None,
+        signal_filter_fn: Optional[Callable[[AlphaSignal, pd.DataFrame, int], bool]] = None,
     ):
         self.symbol = symbol
         self.data = data.copy().reset_index(drop=True)
@@ -37,6 +44,9 @@ class WalkForwardBacktest:
         self.min_return_threshold = min_return_threshold
         self.risk_per_trade = risk_per_trade
         self.forecast_context_bars = forecast_context_bars
+        self.sizing_fn = sizing_fn
+        self.execution_cost_fn = execution_cost_fn
+        self.signal_filter_fn = signal_filter_fn
 
     def run(self, account_equity: float = 10_000.0) -> Dict:
         df = self.data
@@ -64,6 +74,14 @@ class WalkForwardBacktest:
                 equity_curve.append({"timestamp": tomorrow["timestamp"], "equity": equity})
                 continue
 
+            if self.signal_filter_fn is not None and not self.signal_filter_fn(signal, context, i):
+                equity_curve.append({"timestamp": tomorrow["timestamp"], "equity": equity})
+                continue
+
+            position_size = signal.position_size
+            if self.sizing_fn is not None:
+                position_size = self.sizing_fn(signal, context, equity)
+
             # Trade: enter at tomorrow open, exit at next open
             entry_price = float(tomorrow["open"])
             if i + 2 < len(df):
@@ -73,8 +91,12 @@ class WalkForwardBacktest:
                 exit_price = float(tomorrow["close"])
                 exit_time = tomorrow["timestamp"]
 
+            if self.execution_cost_fn is not None:
+                cost = self.execution_cost_fn(tomorrow, df.iloc[i + 2] if i + 2 < len(df) else tomorrow, signal.direction, context)
+                exit_price = exit_price - signal.direction * cost
+
             pnl_pct = signal.direction * (exit_price - entry_price) / entry_price
-            pnl = pnl_pct * min(signal.position_size, equity)
+            pnl = pnl_pct * min(position_size, equity)
             pnl = max(min(pnl, equity), -equity)  # cannot lose more than equity
             equity += pnl
 

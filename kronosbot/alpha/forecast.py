@@ -61,6 +61,8 @@ class ForecastEngine:
             x_timestamp=df["timestamp"],
             y_timestamp=pd.Series([next_date]),
             pred_len=1,
+            sample_count=1,
+            sample_logits=False,
             verbose=False,
         )
         return pred_df["close"]
