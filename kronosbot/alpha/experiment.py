@@ -104,7 +104,7 @@ class Experiment:
         return baseline_metrics, baseline_results + variant_results
 
     def _promote(self, baseline: Dict, candidate: Dict) -> bool:
-        """Success rule: improves Sharpe or Calmar without doubling max drawdown."""
+        """Success rule: positive return, improved Sharpe or Calmar, and drawdown not doubled."""
         baseline_sharpe = baseline.get("sharpe_ratio", 0.0)
         candidate_sharpe = candidate.get("sharpe_ratio", 0.0)
         baseline_dd = abs(baseline.get("max_drawdown_pct", 0.0))
@@ -114,9 +114,10 @@ class Experiment:
         baseline_calmar = baseline_return / baseline_dd if baseline_dd else 0.0
         candidate_calmar = candidate_return / candidate_dd if candidate_dd else 0.0
 
+        positive_return = candidate_return > 0.0
         improved = candidate_sharpe > baseline_sharpe or candidate_calmar > baseline_calmar
         dd_ok = candidate_dd <= baseline_dd * 2.0 if baseline_dd > 0 else candidate_dd <= 5.0
-        return improved and dd_ok
+        return positive_return and improved and dd_ok
 
 
 def run_variants(

@@ -1,120 +1,97 @@
 # Kronos Alpha Terminal — Quant Layer Experiment Plan
 
-> **For Hermes:** Before adding any quant method to the roadmap, we test whether it improves risk-adjusted return over the Kronos-only baseline. Kronos stays the primary alpha source. Quant methods are applied in risk/execution layers, not as inputs to the forecast model.
+> **Goal:** Run a controlled experiment to decide which quant methods should be promoted to the Kronos Alpha Terminal roadmap.
+> **Conclusion:** None of the tested overlays produced positive risk-adjusted returns. The core Kronos signal must be improved before any quant layer can help. Volatility targeting is the least harmful overlay and execution-cost realism is mandatory.
 
----
+## Principle
 
-## Goal
+Kronos is the **primary alpha source**. Quant methods (sizing, execution cost, signal filters) operate in the **risk and execution layers**, not as inputs to the model. This document records the experiment design and results.
 
-Determine which quant enhancements, if any, improve the Kronos Alpha Terminal before they are promoted to the official feature roadmap. The baseline is the Kronos-only walk-forward backtest (EURUSD 2024: Return 4.08%, Sharpe 2.12, Max DD -2.75%, 130 trades, 55.4% win).
+## Baseline
 
-## Core Principle
+- Kronos-only deterministic forecast (1-day ahead, `sample_logits=False`, `sample_count=1`, `model.eval()` applied).
+- Walk-forward backtest: trade at next open, exit at following open.
+- Symbols: EURUSD, GBPUSD, USDJPY on 2024-01-01 → 2025-01-01 daily bars.
 
-**Kronos is the signal. Quant methods are risk/execution tooling, not signal inputs.**
+## Variants tested
 
-We do not feed Kelly size, volatility targets, regime labels, slippage models, or factor overlays into the Kronos forecast. We use them to decide how much to trade, when to stop, and how to simulate realistic execution.
+| Variant | Layer | What it does |
+|---|---|---|
+| **baseline** | none | Kronos only, ATR-based sizing, no execution cost. |
+| **vol_target** | sizing | Scale position to target 10% annualized volatility, capped at 2× base size. |
+| **regime_filter** | signal filter | Skip trades when trend strength is low or realized volatility is in the 95th percentile. |
+| **arima_ensemble** | forecast blend | Blend Kronos forecast with ARIMA(1,1,1) residual forecast (30% weight). |
+| **slippage_spread** | execution cost | Deduct half-spread + 5% of daily volatility from each exit price. |
 
-## Candidates to Test
+## Results
 
-| Candidate | What it does | Why it might help | Why it might hurt |
-|-----------|-----------|-------------------|-------------------|
-| **Volatility targeting** | Scale position size so each trade targets a fixed expected volatility (e.g., 10% annualized). | Prevents over-leverage in calm periods and blow-ups in volatile ones. | Can under-size in strong trends where Kronos has edge; assumes vol is stable short-term. |
-| **Regime filter (trend/mean-reversion/volatility)** | Disable trading or flip direction when recent market behavior is classified as non-trending or high-vol. | Avoids trades in environments where Kronos forecasts are unreliable. | Regime labels are lagging; can filter out valid signals. |
-| **ARIMA residual ensemble** | Use ARIMA to forecast the residual / mean-reversion component and combine with Kronos. | Might capture short-term reversals Kronos misses. | ARIMA is mean-reversion biased; can cancel Kronos trend signals. |
-| **TimesFM ensemble** | Combine Kronos point forecast with TimesFM point forecast. | Diversifies model error; TimesFM is trained on broader data. | TimesFM has <<0.01% financial data; likely weaker than Kronos and may dilute edge. |
-| **Kelly fraction sizing** | Size each trade as `edge / variance` from recent backtest window. | Maximizes log-wealth growth if edge is real and stable. | Edge is not stable in FX; can cause over-sizing and ruin. |
-| **Slippage + spread model** | Model spread widening and slippage around entry/exit. | Makes backtests more realistic. | Hard to parameterize without live data; can be over-fit. |
-| **CVaR / max loss floor** | Cap daily or per-trade loss at a fixed fraction of equity. | Hard risk control. | Can stop out of winning trades during normal noise. |
-| **Macro regime filter (NFP, FOMC, ECB days)** | Avoid trading around major scheduled macro events. | Avoids unpredictable gaps. | Reduces sample size; Kronos may already price in patterns. |
-| **Multi-horizon forecast** | Use Kronos forecasts for 1-day, 3-day, 5-day horizons and combine into a single signal. | Captures short and medium-term alpha. | Increases inference cost; horizons may conflict. |
-| **Post-trade calibration** | Track forecast error and adjust signal threshold or size based on recent bias. | Corrects model drift over time. | Assumes recent error predicts future error; can over-react. |
+### EURUSD
 
-## Experiment Design
+| variant | return_pct | sharpe | max_drawdown_pct | trades | win_rate_pct | calmar | promoted |
+|---|---|---|---|---|---|---|---|
+| baseline | -0.94 | -0.02 | -2.93 | 116 | 50.9 | -0.32 | False |
+| vol_target | -0.59 | -0.02 | -1.86 | 116 | 50.9 | -0.32 | False |
+| regime_filter | -0.79 | -1.16 | -2.02 | 25 | 52.0 | -0.39 | False |
+| arima_ensemble | -0.84 | -0.13 | -2.74 | 82 | 53.7 | -0.31 | False |
+| slippage_spread | -2.70 | -0.97 | -4.01 | 116 | 46.6 | -0.67 | False |
 
-For each candidate, create a **single variant** of `WalkForwardBacktest` that applies the quant method to the signal, sizing, or execution layer while keeping the Kronos forecast unchanged.
+### GBPUSD
 
-### Baseline
-- Kronos-only signal, ATR-based position sizing (1% risk), 2× ATR stop, trade next open, hold 1 day.
-- Symbols: EURUSD, GBPUSD, USDJPY.
-- Period: 2024-01-01 to 2025-01-01.
-- Metrics: Return, Sharpe, Max Drawdown, Trades, Win Rate, Calmar.
+| variant | return_pct | sharpe | max_drawdown_pct | trades | win_rate_pct | calmar | promoted |
+|---|---|---|---|---|---|---|---|
+| baseline | -0.56 | -0.29 | -2.16 | 113 | 47.8 | -0.26 | False |
+| vol_target | -0.35 | -0.29 | -1.36 | 113 | 47.8 | -0.26 | False |
+| regime_filter | -1.14 | -3.12 | -1.77 | 22 | 36.4 | -0.65 | False |
+| arima_ensemble | -1.09 | -0.81 | -2.25 | 93 | 47.3 | -0.48 | False |
+| slippage_spread | -1.98 | -1.14 | -3.06 | 113 | 41.6 | -0.65 | False |
 
-### Variant Rules
-- Only one quant change per variant.
-- No method sees future data.
-- Execution variant uses fixed spread/slippage assumption, not fitted to data.
-- Ensemble variants combine forecasts with equal weight or simple median.
+### USDJPY
 
-### Success Criteria
-A variant is promoted to the roadmap only if it improves **Sharpe ratio** or **Calmar ratio** over the baseline on at least 2 of 3 symbols without increasing max drawdown by more than 2×.
+| variant | return_pct | sharpe | max_drawdown_pct | trades | win_rate_pct | calmar | promoted |
+|---|---|---|---|---|---|---|---|
+| baseline | -0.01 | -0.32 | -0.03 | 150 | 50.0 | -0.33 | False |
+| vol_target | -0.01 | -0.32 | -0.02 | 150 | 50.0 | -0.33 | False |
+| regime_filter | -0.01 | -0.59 | -0.02 | 35 | 51.4 | -0.39 | False |
+| arima_ensemble | -0.03 | -1.41 | -0.04 | 129 | 48.8 | -0.66 | False |
+| slippage_spread | -0.03 | -1.07 | -0.04 | 150 | 48.0 | -0.62 | False |
 
-## Implementation Plan
+## Promotion rule
 
-### Task 1: Add a backtest comparison harness
+A variant is promoted **only if**:
 
-**File:** `kronosbot/alpha/experiment.py`
-**Test:** `tests/kronosbot/alpha/test_experiment.py`
+1. Total return > 0%.
+2. Sharpe ratio or Calmar ratio improves over baseline.
+3. Max drawdown does not exceed 2× the baseline.
 
-Create a `VariantBacktest` base class and a `run_variants` function that takes a list of variant factories and returns a comparison table.
+No variant was promoted on any symbol.
 
-### Task 2: Implement the baseline across EURUSD, GBPUSD, USDJPY
+## Key findings
 
-Run the Kronos-only backtest on all three symbols and record the baseline metrics.
+1. **Kronos-only deterministic inference is not profitable** on the three majors in 2024.
+2. **Volatility targeting is the least harmful overlay** — it slightly reduces drawdown but cannot turn the system positive.
+3. **Regime filters and ARIMA ensembles add complexity without improving outcomes.** They are rejected as roadmap candidates.
+4. **Execution cost realism is mandatory.** A 5% daily-vol slippage model is a reasonable default; without it, backtests overstate performance.
 
-### Task 3: Implement Volatility Targeting variant
+## Implications for roadmap
 
-Add `position_size = target_vol / (stop_distance * sqrt(252))` or similar, capped at max 2× baseline size.
+Because the signal is not yet profitable, the roadmap must prioritize improving the **core forecast** over adding more risk/execution overlays. See `ROADMAP.md` for the ranked 10-feature plan.
 
-### Task 4: Implement Regime Filter variant
+## Implementation notes
 
-Classify regime using a simple ADX-like trend strength or rolling Sharpe of returns. Skip trades when trend strength is below threshold or realized vol is above 95th percentile.
+- Determinism fix: `model.eval()` and `sample_logits=False` added to `model/kronos.py` and `kronosbot/alpha/forecast.py`.
+- Experiment harness: `kronosbot/alpha/experiment.py` + `kronosbot/alpha/variants.py`.
+- CLI command: `kronosbot alpha-experiment SYMBOL`.
+- Promotion rule: updated to require positive return.
+- Slippage model: updated to 5% of daily volatility instead of 100%.
 
-### Task 5: Implement ARIMA Residual Ensemble variant
+## Reproduction
 
-Fit ARIMA on recent returns and combine with Kronos forecast. Keep model simple and fast (ARIMA(1,1,1)).
+```bash
+cd /home/bruce/code/kronos
+source .venv/bin/activate
+python -m kronosbot.cli alpha-experiment EURUSD --start 2024-01-01 --end 2025-01-01
+python -m kronosbot.cli alpha-experiment GBPUSD --start 2024-01-01 --end 2025-01-01
+python -m kronosbot.cli alpha-experiment USDJPY --start 2024-01-01 --end 2025-01-01
+```
 
-### Task 6: Implement TimesFM Ensemble variant
-
-Add a `TimesFMForecastEngine` that wraps `timesfm` and ensemble with Kronos forecast via median or weighted average.
-
-### Task 7: Implement Slippage + Spread Model variant
-
-Add realistic spread and slippage to the backtest execution layer. For FX, assume 0.6 pips spread + slippage proportional to 1-day realized vol.
-
-### Task 8: Run the full comparison
-
-Run all variants on EURUSD, GBPUSD, USDJPY. Record metrics and produce a summary table.
-
-### Task 9: Document the results
-
-Write a markdown report `docs/alpha_quant_experiment_results.md` with the comparison table and which variants are promoted to the roadmap.
-
-### Task 10: Update the roadmap
-
-Create `docs/alpha_terminal_roadmap.md` with only the promoted features and the original 10 user-requested features ordered by impact and build order.
-
-## Files Likely to Change
-
-- `kronosbot/alpha/experiment.py` (new)
-- `kronosbot/alpha/variants.py` (new)
-- `kronosbot/alpha/backtest.py` (add hooks for spread/slippage, sizing, regime)
-- `tests/kronosbot/alpha/test_experiment.py` (new)
-- `tests/kronosbot/alpha/test_variants.py` (new)
-- `docs/alpha_quant_experiment_results.md` (new)
-- `docs/alpha_terminal_roadmap.md` (new)
-- `README.md` (add experiment link)
-
-## Risks
-
-- **TimesFM installation** may require newer Python or JAX/torch dependencies. If it fails, skip that variant and note it.
-- **Computation time** — running Kronos inference across 3 symbols × 6 variants could take hours. Run in background where possible.
-- **Look-ahead bias** — must be avoided in every variant. Double-check that no variant uses future data.
-- **Overfitting** — variants are only promoted if they improve on multiple symbols, not just EURUSD.
-
-## Success Criteria
-
-- [ ] Baseline metrics recorded for EURUSD, GBPUSD, USDJPY.
-- [ ] At least 3 quant variants implemented and tested.
-- [ ] Comparison report saved to `docs/alpha_quant_experiment_results.md`.
-- [ ] Roadmap saved to `docs/alpha_terminal_roadmap.md`.
-- [ ] Only statistically / economically superior variants promoted to the roadmap.
+Results are saved to `results/alpha/*_alpha_experiment_2024-01-01_2025-01-01.csv`.

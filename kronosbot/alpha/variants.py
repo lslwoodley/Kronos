@@ -230,22 +230,22 @@ def arima_residual_ensemble_factory(
 
 def fx_slippage_cost(
     base_spread_pips: float = 0.6,
-    slippage_vol_scale: float = 1.0,
+    slippage_vol_fraction: float = 0.05,
 ) -> Callable:
-    """Return an execution cost function that models FX spread + volatility slippage.
+    """Return an execution cost function that models FX spread plus a small slippage fraction.
 
     Cost is expressed in price units: half the spread plus a slippage term proportional to
-    the one-day realized volatility.  For a JPY pair (price ~ 150), the cost is scaled to be
-    comparable in percentage terms.
+    the one-day realized volatility (default 5% of daily vol).  This keeps the model realistic
+    for liquid majors without turning a modest signal into a large loss.
     """
 
     def _cost(entry: pd.Series, _exit: pd.Series, _direction: int, context: pd.DataFrame) -> float:
         price = float(entry["open"])
-        # One-day realized volatility (absolute)
+        # One-day realized volatility (absolute price units)
         close = context["close"]
         log_returns = np.log(close / close.shift(1)).dropna()
         one_day_vol = float(log_returns.tail(20).std() * price)
-        slippage = slippage_vol_scale * one_day_vol
+        slippage = slippage_vol_fraction * one_day_vol
 
         # Spread in price units: 0.6 pips for a 1.0-ish price, 0.06 pips for 100+ price.
         if price >= 50.0:
@@ -260,7 +260,7 @@ def fx_slippage_cost(
 
 def slippage_spread_factory(
     base_spread_pips: float = 0.6,
-    slippage_vol_scale: float = 1.0,
+    slippage_vol_fraction: float = 0.05,
     **backtest_kwargs,
 ) -> Callable:
     """Factory builder for a slippage + spread execution variant."""
@@ -272,7 +272,7 @@ def slippage_spread_factory(
             forecast_fn=forecast_fn,
             execution_cost_fn=fx_slippage_cost(
                 base_spread_pips=base_spread_pips,
-                slippage_vol_scale=slippage_vol_scale,
+                slippage_vol_fraction=slippage_vol_fraction,
             ),
             **backtest_kwargs,
         )

@@ -161,6 +161,67 @@ def webui(host, port, debug):
 @click.option("--model-cache-dir", default=str(DEFAULT_CACHE_DIR.parent / "hf_cache"), help="HuggingFace model cache directory.")
 @click.option("--cache-dir", default=str(DEFAULT_CACHE_DIR), help="CSV cache directory.")
 @click.option("--output", default=str(DEFAULT_RESULTS_DIR / "alpha"), help="Directory to save results JSON.")
+@click.option("--variants", default="all", help="Comma-separated variant names or 'all'.")
+def alpha_experiment(symbol, start, end, cash, threshold, model_cache_dir, cache_dir, output, variants):
+    """Run the Kronos Alpha Terminal quant-layer experiment for SYMBOL."""
+    from pathlib import Path as _Path
+    import json
+
+    from kronosbot.alpha.forecast import ForecastEngine
+    from kronosbot.alpha.experiment import run_variants, baseline_factory
+    from kronosbot.alpha.variants import (
+        volatility_targeting_factory,
+        regime_filter_factory,
+        arima_residual_ensemble_factory,
+        slippage_spread_factory,
+    )
+
+    feed = DataFeed(cache_dir=_resolve_path(cache_dir))
+    df = feed.load(symbol, start=start, end=end)
+    engine = ForecastEngine.from_pretrained(device="cpu")
+    forecast_fn = lambda s, d, date: engine.forecast_next_day(s, d)
+
+    all_variants = [
+        ("vol_target", volatility_targeting_factory(min_return_threshold=threshold)),
+        ("regime_filter", regime_filter_factory(min_return_threshold=threshold)),
+        ("arima_ensemble", arima_residual_ensemble_factory(min_return_threshold=threshold, arima_weight=0.3)),
+        ("slippage_spread", slippage_spread_factory(min_return_threshold=threshold)),
+    ]
+    if variants.lower() == "all":
+        selected = all_variants
+    else:
+        names = set(variants.split(","))
+        selected = [(n, f) for n, f in all_variants if n in names]
+
+    comparison = run_variants(
+        symbol=symbol,
+        data=df,
+        forecast_fn=forecast_fn,
+        baseline_factory=baseline_factory,
+        variant_factories=selected,
+        account_equity=cash,
+    )
+
+    click.echo("Kronos Alpha Terminal Quant Experiment")
+    click.echo(f"Symbol: {symbol}  Start: {start}  End: {end}")
+    click.echo(comparison.to_string(index=False))
+
+    out_dir = _Path(output)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_file = out_dir / f"{symbol}_alpha_experiment_{start}_{end}.csv"
+    comparison.to_csv(out_file, index=False)
+    click.echo(f"Saved: {out_file}")
+
+
+@cli.command()
+@click.argument("symbol")
+@click.option("--start", default="2024-01-01", help="Backtest start date (YYYY-MM-DD).")
+@click.option("--end", default="2025-01-01", help="Backtest end date (YYYY-MM-DD).")
+@click.option("--cash", default=DEFAULT_CASH, help="Starting cash.")
+@click.option("--threshold", default=0.001, help="Minimum expected return threshold to trade.")
+@click.option("--model-cache-dir", default=str(DEFAULT_CACHE_DIR.parent / "hf_cache"), help="HuggingFace model cache directory.")
+@click.option("--cache-dir", default=str(DEFAULT_CACHE_DIR), help="CSV cache directory.")
+@click.option("--output", default=str(DEFAULT_RESULTS_DIR / "alpha"), help="Directory to save results JSON.")
 def alpha(symbol, start, end, cash, threshold, model_cache_dir, cache_dir, output):
     """Run the Kronos Alpha Terminal forecast + walk-forward backtest for SYMBOL."""
     from pathlib import Path as _Path

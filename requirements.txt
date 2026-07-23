@@ -16,3 +16,4 @@ flask-cors
 plotly
 yfinance
 click
+statsmodels

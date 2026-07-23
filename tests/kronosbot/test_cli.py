@@ -91,6 +91,13 @@ class TestCLI:
         assert "SYMBOL" in result.output
         assert "--start" in result.output
 
+    def test_alpha_experiment_help(self):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["alpha-experiment", "--help"])
+        assert result.exit_code == 0, result.output
+        assert "SYMBOL" in result.output
+        assert "--variants" in result.output
+
     def test_webui_help(self):
         runner = CliRunner()
         result = runner.invoke(cli, ["webui", "--help"])
